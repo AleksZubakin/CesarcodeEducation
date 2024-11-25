@@ -1,13 +1,15 @@
+import enchant
+import time
+
 SYMBOLS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890 !?."
 
 
 class Caesarscipher:
 
-
     def __init__(self):
         self.symbols = SYMBOLS
 
-    def decrypt(self, message: str, key: int) -> str:
+    def decrypt(self, message: str, key) -> str:
         decrypted_message = ""
         for char in message:
             if char in self.symbols:
@@ -17,7 +19,7 @@ class Caesarscipher:
                 decrypted_message += char  # Не расшифровать, добавим символ
         return decrypted_message
 
-    def encrypt(self, message: str, key: int) -> str:
+    def encrypt(self, message: str, key) -> str:
         encrypted_message = ""
         for char in message:
             if char in self.symbols:
@@ -27,33 +29,86 @@ class Caesarscipher:
                 encrypted_message += char  # Не зашифровать, добавим символ
         return encrypted_message
 
+    def check_decrypt(self, message: str, key: int):
+        d = enchant.Dict('en_US')
+        i = 0
+        phrase = message
+        summary = message
+        decrypt_list = []
 
-def find_key(encrypted_message: str) -> int:
-    cipher = Caesarscipher()
-    results = []  # Список для хранения ключей и расшифрованных сообщений
+        for _ in self.symbols:
+            left_phrase = phrase
+            for _ in message:
+                index = phrase.find(' ')
+                if index != -1:
+                    left_phrase = phrase[0:index]
+                    phrase = phrase[index + 1:]
+            if d.check(left_phrase):
+                decrypt_list = [key + i, summary, phrase]
+                return decrypt_list
 
-    for key in range(len(cipher.symbols)):
-        decrypted = cipher.decrypt(encrypted_message, key)
-        results.append((key, decrypted))  # Добавляем результат в список
-        print(f"Ключ: {key}, Расшифрованное сообщение: {decrypted}")
+            else:
+                i += 1
+                phrase = self.decrypt(message, key + i)
+                summary = phrase
 
-    return results
-
-def save_to_file(results: list, filename: str) -> None:
-    with open(filename, 'w', encoding='utf-8') as file:
-        for key, decrypted_message in results:
-            file.write(f"Ключ: {key}, Расшифрованное сообщение: {decrypted_message}\n")
+    def save_to_file(self, results: str, filename: str) -> None:
+        with open(filename, 'w', encoding='utf-8') as file:
+            file.write(results)
+        return True
 
 
 if __name__ == "__main__":
 
-    encrypted_password = "o3zR v..D0?yRA0R8FR8v47w0ER4.R1WdC!sLF5D"
+    message_input = str(input('Введите фразу: '))
+    str_key = input('Введите ключ, или оставьте пустым: ')
+    type_start = str(
+        input('введите тип действия(0 - расшифровать, 1 - зашифровать):')
+        )
+    if type_start != '':
+        type_start = int(type_start)
+    else:
+        type_start = 55
+
+    if str_key != '':
+        key = int(str_key)
+    else:
+        key = 55
+
     cipher = Caesarscipher()
 
-    results = find_key(encrypted_password)
+    if key == 0:
+        print('Ключ равен 0. Не шифруем')
+    elif key != 55:
+        if type_start == 1:
+            encrypt = cipher.encrypt(message_input, key)
+            result = 'Вы зашифровали фразу' + message_input
+            result += '. Результат: ' + encrypt
+            print(f'Вы зашифровали фразу: {message_input}', end=' ')
+            print(f'. Результат: {encrypt}')
+        elif type_start == 0:
+            decrypt = cipher.decrypt(message_input, key)
+            result = 'Вы расшифровали фразу' + message_input
+            result += '. Результат: ' + decrypt
+            print(f'Вы расшифровали фразу: {message_input}', end=' ')
+            print(f'. Результат: {decrypt}')
+    elif key == 55:
+        cipher_list = cipher.check_decrypt(cipher.decrypt(message_input, 0), 0)
+        result = 'Ваша исходная фраза' + cipher_list[1]
+        result += '. Ваш ключ:' + str(cipher_list[0])
+        result += '. Возможно ваш пароль: ' + cipher_list[2]
+        print(f'Ваша исходная фраза: {cipher_list[1]}.', end=' ')
+        print(f'Ваш ключ: {cipher_list[0]}.', end=' ')
+        print(f'Возможно ваш пароль: {cipher_list[2]}')
 
-    save_to_file(results, 'keys_result.txt')
-
-    if results:
-        key, result = results[0]  # или любой другой ключ
-        print(f"Подобранный ключ: {key}. Расшифрованный пароль: {result}")
+    save = str(input('Сохранить результаты в файл? y//n: '))
+    if save == 'y':
+        path = str(input('Введите путь и имя файла для сохранения: '))
+        if path != '':
+            if cipher.save_to_file(result, path):
+                time.sleep(3)
+                print('Файл успешно сохранен.')
+                time.sleep(2)
+    else:
+        print('Ну нет так нет.')
+        time.sleep(1)
